@@ -86,34 +86,44 @@ pub(crate) fn tray_subscription() -> Subscription<Message> {
                 std::thread::spawn(move || {
                     let menu_channel = MenuEvent::receiver();
                     let tray_channel = TrayIconEvent::receiver();
+
+                    #[cfg(target_os = "linux")]
                     loop {
                         if let Ok(event) = menu_channel.try_recv() {
                             let _ = tx.unbounded_send(Message::TrayMenuClicked(event.id));
                         }
 
                         if let Ok(event) = tray_channel.try_recv() {
-                            match event {
-                                TrayIconEvent::DoubleClick {
-                                    button: tray_icon::MouseButton::Left,
-                                    ..
-                                } => {
-                                    let _ = tx.unbounded_send(Message::TrayIconClicked);
-                                }
-                                _ => {}
+                            if let TrayIconEvent::DoubleClick {
+                                button: tray_icon::MouseButton::Left,
+                                ..
+                            } = event
+                            {
+                                let _ = tx.unbounded_send(Message::TrayIconClicked);
                             }
                         }
 
-                        #[cfg(target_os = "linux")]
-                        {
-                            let _ = tx.unbounded_send(Message::GtkTick);
-                        }
-
-                        #[cfg(target_os = "macos")]
-                        {
-                            let _ = tx.unbounded_send(Message::MacOsActivationTick);
-                        }
-
+                        let _ = tx.unbounded_send(Message::GtkTick);
                         std::thread::sleep(std::time::Duration::from_millis(32));
+                    }
+
+                    #[cfg(not(target_os = "linux"))]
+                    loop {
+                        crossbeam_channel::select! {
+                            recv(menu_channel) -> event => {
+                                if let Ok(event) = event {
+                                    let _ = tx.unbounded_send(Message::TrayMenuClicked(event.id));
+                                }
+                            }
+                            recv(tray_channel) -> event => {
+                                if let Ok(TrayIconEvent::DoubleClick {
+                                    button: tray_icon::MouseButton::Left,
+                                    ..
+                                }) = event {
+                                    let _ = tx.unbounded_send(Message::TrayIconClicked);
+                                }
+                            }
+                        }
                     }
                 });
 

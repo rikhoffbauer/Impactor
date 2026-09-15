@@ -5690,6 +5690,7 @@ version = "2.6.3"
 dependencies = [
  "auto-launcher",
  "chrono",
+ "crossbeam-channel",
  "current_locale",
  "env_logger",
  "futures",

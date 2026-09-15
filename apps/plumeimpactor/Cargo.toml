@@ -26,6 +26,7 @@ plume_store = { path = "../../crates/plume_store" }
 iced = { version = "0.14", features = ["image-without-codecs", "advanced"] }
 wgpu = { version = "27.0", default-features = false, features = ["std"] }     # Power references
 tray-icon = { version = "0.21", default-features = false }                    # System tray icon
+crossbeam-channel = "0.5"
 rfd = "0.16"                                                                  # File dialogs
 open = "5.3"                                                                  # Opening links (I know, useless)
 notify-rust = "4.11"                                                          # Notifications
